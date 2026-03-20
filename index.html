@@ -27,6 +27,17 @@
   </style>
 </head>
 <body>
+<div id="gate" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;">
+  <div style="width:100%;max-width:420px;background:#131a33;border:1px solid #283153;border-radius:12px;padding:18px;">
+    <h2 style="margin:0 0 10px;">🔒 页面访问验证</h2>
+    <div class="muted" style="margin-bottom:10px;">请输入访问密码</div>
+    <input id="pwdInput" type="password" placeholder="Password" style="width:100%;background:#0f1530;border:1px solid #334171;color:#e8ecff;border-radius:8px;padding:10px;font-size:14px" />
+    <button id="unlockBtn" style="margin-top:10px;width:100%;background:#22c55e;color:#0b1020;border:none;border-radius:8px;padding:10px;font-weight:600;cursor:pointer;">进入页面</button>
+    <div id="gateMsg" class="muted" style="margin-top:8px;color:#fca5a5;display:none;">密码错误</div>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
 <div class="wrap">
   <h1>资产看板（弦维护）</h1>
   <div class="muted">更新时间：2026-03-21 · 汇率假设 USD/CNY=7.20, HKD/CNY=0.92</div>
@@ -95,8 +106,32 @@
 
   <p class="muted" style="margin-top:14px">注：投资资产默认按当前静态口径（不随行情变动），你可以先用这个做现金与负债管理。</p>
 </div>
+</div>
 
 <script>
+  // 简单静态密码门（前端方案，仅防随手访问，不是高强度安全）
+  const PASSWORD = 'xian2026';
+  function unlock(){
+    const v = (document.getElementById('pwdInput').value || '').trim();
+    if(v === PASSWORD){
+      document.getElementById('gate').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      sessionStorage.setItem('finance_unlocked','1');
+      recalc();
+    }else{
+      const msg = document.getElementById('gateMsg');
+      msg.style.display = 'block';
+    }
+  }
+  document.getElementById('unlockBtn').addEventListener('click', unlock);
+  document.getElementById('pwdInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') unlock(); });
+
+  if(sessionStorage.getItem('finance_unlocked') === '1'){
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  }
+
+
   const startDebt = 180000;
   const startCash = 35000;
   const investStatic = 51018.77 + 157433.34 + 28800; // 非现金资产静态值
@@ -198,7 +233,7 @@
 
   document.getElementById('monthlyExpense').addEventListener('input', recalc);
   document.getElementById('monthlyRepay').addEventListener('input', recalc);
-  recalc();
+  if(sessionStorage.getItem('finance_unlocked') === '1') recalc();
 </script>
 </body>
 </html>
