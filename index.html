@@ -159,7 +159,6 @@
     let carDebt = startCarDebt;
     let debt = momDebt + carDebt;
     let cash = startCash;
-    let fixedCash = startCash;
     let cumGross = 0;
     let cumTaxPaid = 0;
 
@@ -189,26 +188,6 @@
     months.forEach((m,i)=>{
       const income = monthlyIncome(i);
 
-      // 现金流表（单独）
-      const fixedGross = 45000;
-      const fixedTaxableMonthly = Math.max(0, fixedGross - 5000 - sihf - specialDeduct);
-      const fixedTax = annualTaxByBracket(fixedTaxableMonthly * 12) / 12;
-      const cashIn = fixedGross - sihf - fixedTax;
-      const cashOut = expense + carLoan + repayPlan;
-      const netCashflow = cashIn - cashOut;
-      fixedCash += netCashflow;
-
-      const dtr = document.createElement('tr');
-      dtr.innerHTML = `
-        <td>${m}</td>
-        <td>${cashIn.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
-        <td>${cashOut.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
-        <td class="warn">${netCashflow.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
-        <td>${fixedCash.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
-        <td class="ok">${fixedCash.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
-      `;
-      disposableTb.appendChild(dtr);
-
       cumGross += income;
       const cumTaxable = Math.max(0, cumGross - (5000 + sihf + specialDeduct) * (i + 1));
       const cumTax = annualTaxByBracket(cumTaxable);
@@ -224,6 +203,21 @@
       carDebt -= carPay;
       debt = momDebt + carDebt;
       const netAsset = cash + investStatic - debt;
+
+      // 现金流表（单独）：用真实当月现金流（含年终/绩效）
+      const cashIn = takeHome;
+      const cashOut = expense + carPay + repay;
+      const netCashflow = net;
+      const dtr = document.createElement('tr');
+      dtr.innerHTML = `
+        <td>${m}</td>
+        <td>${cashIn.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td>${cashOut.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td class="warn">${netCashflow.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td>${cash.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td class="ok">${cash.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+      `;
+      disposableTb.appendChild(dtr);
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
