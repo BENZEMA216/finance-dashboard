@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>本泽马资产看板</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:#0b1020;color:#e8ecff;margin:0}
+    .wrap{max-width:1100px;margin:28px auto;padding:0 16px}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .card{background:#131a33;border:1px solid #283153;border-radius:12px;padding:14px}
+    h1{margin:0 0 14px;font-size:24px}
+    h2{margin:24px 0 8px;font-size:18px}
+    table{width:100%;border-collapse:collapse;background:#131a33;border:1px solid #283153;border-radius:12px;overflow:hidden}
+    th,td{padding:10px;border-bottom:1px solid #283153;text-align:left;font-size:14px}
+    th{background:#1a2347}
+    tr:last-child td{border-bottom:none}
+    .ok{color:#67e8a5}.warn{color:#ffd166}
+    .muted{opacity:.75;font-size:12px}
+    @media (max-width:900px){.grid{grid-template-columns:1fr 1fr}}
+    @media (max-width:560px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>资产看板（弦维护）</h1>
+  <div class="muted">更新时间：2026-03-21 · 汇率假设 USD/CNY=7.20, HKD/CNY=0.92</div>
+
+  <div class="grid" style="margin-top:14px">
+    <div class="card"><div class="muted">总资产</div><div style="font-size:28px">¥272,252.11</div></div>
+    <div class="card"><div class="muted">总负债</div><div style="font-size:28px">¥180,000.00</div></div>
+    <div class="card"><div class="muted">净资产</div><div class="ok" style="font-size:28px">¥92,252.11</div></div>
+    <div class="card"><div class="muted">现金余额</div><div style="font-size:28px">¥35,000</div></div>
+  </div>
+
+  <h2>资产明细</h2>
+  <table>
+    <tr><th>类别</th><th>明细</th><th>金额（原币）</th><th>折算 CNY</th></tr>
+    <tr><td>现金</td><td>人民币现金</td><td>35,000 CNY</td><td>35,000.00</td></tr>
+    <tr><td>美股</td><td>NVDA/BRK-B/QQQ（成本口径）</td><td>7,085.94 USD</td><td>51,018.77</td></tr>
+    <tr><td>港股</td><td>09988/01810（成本口径）</td><td>171,123.20 HKD</td><td>157,433.34</td></tr>
+    <tr><td>加密</td><td>BTC+ETH（估值口径）</td><td>4,000 USD</td><td>28,800.00</td></tr>
+  </table>
+
+  <h2>负债明细</h2>
+  <table>
+    <tr><th>债务项</th><th>金额</th><th>备注</th></tr>
+    <tr><td>对妈妈债务</td><td>180,000 CNY</td><td>已纳入净资产计算</td></tr>
+  </table>
+
+  <h2>每月预期（税前口径）</h2>
+  <table>
+    <tr><th>月份</th><th>固定工资</th><th>绩效现金</th><th>全年奖</th><th>月现金合计</th></tr>
+    <tr><td>2026-03</td><td>45,000</td><td>12,213.39</td><td>108,098.63</td><td class="warn">165,312.02</td></tr>
+    <tr><td>常规月</td><td>45,000</td><td>4,071.13</td><td>0</td><td>49,071.13</td></tr>
+    <tr><td>尾次月</td><td>45,000</td><td>3,501.03</td><td>0</td><td>48,501.03</td></tr>
+  </table>
+
+  <h2>股权归属日历（关键节点）</h2>
+  <table>
+    <tr><th>项目</th><th>内容</th></tr>
+    <tr><td>新增授予</td><td>80 股，授予价 226.07 USD，3年归属，年化价值 42,409.53 CNY</td></tr>
+    <tr><td>绩效RSU</td><td>118 股：2026-04-25 归属24股；2026-05-01起每月归属8股；2027-04-01归属6股</td></tr>
+  </table>
+
+  <p class="muted" style="margin-top:14px">注：期权空头头寸（NVDA/MSFT）作为风险敞口单列，不计入静态净资产。</p>
+</div>
+</body>
+</html>
