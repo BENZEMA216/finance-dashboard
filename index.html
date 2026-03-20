@@ -5,18 +5,19 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>本泽马资产看板</title>
   <style>
-    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:#0b1020;color:#e8ecff;margin:0}
-    .wrap{max-width:1100px;margin:28px auto;padding:0 16px}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:#0b1020;color:#e8ecff;margin:0}
+    .wrap{max-width:1150px;margin:26px auto;padding:0 16px}
     .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
     .card{background:#131a33;border:1px solid #283153;border-radius:12px;padding:14px}
-    h1{margin:0 0 14px;font-size:24px}
-    h2{margin:24px 0 8px;font-size:18px}
+    h1{margin:0 0 10px;font-size:24px}
+    h2{margin:22px 0 8px;font-size:18px}
     table{width:100%;border-collapse:collapse;background:#131a33;border:1px solid #283153;border-radius:12px;overflow:hidden}
     th,td{padding:10px;border-bottom:1px solid #283153;text-align:left;font-size:14px}
     th{background:#1a2347}
     tr:last-child td{border-bottom:none}
-    .ok{color:#67e8a5}.warn{color:#ffd166}
-    .muted{opacity:.75;font-size:12px}
+    .ok{color:#67e8a5}.warn{color:#ffd166}.muted{opacity:.75;font-size:12px}
+    .bar{height:10px;background:#1a2347;border-radius:999px;overflow:hidden}
+    .bar>span{display:block;height:100%;background:linear-gradient(90deg,#2dd4bf,#22c55e)}
     @media (max-width:900px){.grid{grid-template-columns:1fr 1fr}}
     @media (max-width:560px){.grid{grid-template-columns:1fr}}
   </style>
@@ -42,18 +43,23 @@
     <tr><td>加密</td><td>BTC+ETH（估值口径）</td><td>4,000 USD</td><td>28,800.00</td></tr>
   </table>
 
-  <h2>负债明细</h2>
+  <h2>负债与偿还进度</h2>
   <table>
-    <tr><th>债务项</th><th>金额</th><th>备注</th></tr>
-    <tr><td>对妈妈债务</td><td>180,000 CNY</td><td>已纳入净资产计算</td></tr>
+    <tr><th>债务项</th><th>初始金额</th><th>当前余额</th><th>进度</th></tr>
+    <tr>
+      <td>对妈妈债务</td>
+      <td>180,000 CNY</td>
+      <td id="debtRemain">180,000 CNY</td>
+      <td>
+        <div class="bar"><span id="debtProgress" style="width:0%"></span></div>
+        <div class="muted" id="debtText">已偿还 0%</div>
+      </td>
+    </tr>
   </table>
 
-  <h2>每月预期（税前口径）</h2>
-  <table>
-    <tr><th>月份</th><th>固定工资</th><th>绩效现金</th><th>全年奖</th><th>月现金合计</th></tr>
-    <tr><td>2026-03</td><td>45,000</td><td>12,213.39</td><td>108,098.63</td><td class="warn">165,312.02</td></tr>
-    <tr><td>常规月</td><td>45,000</td><td>4,071.13</td><td>0</td><td>49,071.13</td></tr>
-    <tr><td>尾次月</td><td>45,000</td><td>3,501.03</td><td>0</td><td>48,501.03</td></tr>
+  <h2>未来12个月现金流预测（税前模板）</h2>
+  <table id="cashflowTable">
+    <tr><th>月份</th><th>固定工资</th><th>绩效现金</th><th>全年奖</th><th>月现金合计</th><th>建议还款</th><th>月末债务余额</th></tr>
   </table>
 
   <h2>股权归属日历（关键节点）</h2>
@@ -63,7 +69,42 @@
     <tr><td>绩效RSU</td><td>118 股：2026-04-25 归属24股；2026-05-01起每月归属8股；2027-04-01归属6股</td></tr>
   </table>
 
-  <p class="muted" style="margin-top:14px">注：期权空头头寸（NVDA/MSFT）作为风险敞口单列，不计入静态净资产。</p>
+  <p class="muted" style="margin-top:14px">注：期权空头头寸（NVDA/MSFT）作为风险敞口单列，不计入静态净资产。下一版可接实时行情。</p>
 </div>
+
+<script>
+  const startDebt = 180000;
+  const monthlyPay = 10000; // 可按你的计划调整
+  const months = [
+    '2026-03','2026-04','2026-05','2026-06','2026-07','2026-08','2026-09','2026-10','2026-11','2026-12','2027-01','2027-02'
+  ];
+
+  function perfCash(i){
+    if(i===0) return 12213.39;
+    if(i===11) return 3501.03;
+    return 4071.13;
+  }
+  function annualBonus(i){ return i===0 ? 108098.63 : 0; }
+
+  let debt = startDebt;
+  const tb = document.getElementById('cashflowTable');
+  months.forEach((m,i)=>{
+    const salary = 45000;
+    const perf = perfCash(i);
+    const bonus = annualBonus(i);
+    const total = salary + perf + bonus;
+    const repay = Math.min(monthlyPay, debt);
+    debt = Math.max(0, debt - repay);
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${m}</td><td>${salary.toLocaleString()}</td><td>${perf.toLocaleString()}</td><td>${bonus.toLocaleString()}</td><td class="warn">${total.toLocaleString()}</td><td>${repay.toLocaleString()}</td><td>${debt.toLocaleString()}</td>`;
+    tb.appendChild(tr);
+  });
+
+  const repaidPct = ((startDebt - debt)/startDebt*100).toFixed(1);
+  document.getElementById('debtProgress').style.width = repaidPct + '%';
+  document.getElementById('debtText').textContent = `已偿还 ${repaidPct}%（按每月还款 ¥${monthlyPay.toLocaleString()} 模板）`;
+  document.getElementById('debtRemain').textContent = `${debt.toLocaleString()} CNY（12个月后）`;
+</script>
 </body>
 </html>
