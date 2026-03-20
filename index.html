@@ -9,6 +9,10 @@
     .wrap{max-width:1150px;margin:26px auto;padding:0 16px}
     .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
     .card{background:#131a33;border:1px solid #283153;border-radius:12px;padding:14px}
+    .controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+    .input{background:#131a33;border:1px solid #283153;border-radius:10px;padding:12px}
+    .input label{display:block;font-size:12px;opacity:.8;margin-bottom:6px}
+    .input input{width:100%;background:#0f1530;border:1px solid #334171;color:#e8ecff;border-radius:8px;padding:10px;font-size:14px}
     h1{margin:0 0 10px;font-size:24px}
     h2{margin:22px 0 8px;font-size:18px}
     table{width:100%;border-collapse:collapse;background:#131a33;border:1px solid #283153;border-radius:12px;overflow:hidden}
@@ -18,7 +22,7 @@
     .ok{color:#67e8a5}.warn{color:#ffd166}.muted{opacity:.75;font-size:12px}
     .bar{height:10px;background:#1a2347;border-radius:999px;overflow:hidden}
     .bar>span{display:block;height:100%;background:linear-gradient(90deg,#2dd4bf,#22c55e)}
-    @media (max-width:900px){.grid{grid-template-columns:1fr 1fr}}
+    @media (max-width:900px){.grid{grid-template-columns:1fr 1fr}.controls{grid-template-columns:1fr}}
     @media (max-width:560px){.grid{grid-template-columns:1fr}}
   </style>
 </head>
@@ -27,14 +31,25 @@
   <h1>资产看板（弦维护）</h1>
   <div class="muted">更新时间：2026-03-21 · 汇率假设 USD/CNY=7.20, HKD/CNY=0.92</div>
 
-  <div class="grid" style="margin-top:14px">
-    <div class="card"><div class="muted">总资产</div><div style="font-size:28px">¥272,252.11</div></div>
-    <div class="card"><div class="muted">总负债</div><div style="font-size:28px">¥180,000.00</div></div>
-    <div class="card"><div class="muted">净资产</div><div class="ok" style="font-size:28px">¥92,252.11</div></div>
-    <div class="card"><div class="muted">现金余额</div><div style="font-size:28px">¥35,000</div></div>
+  <div class="controls">
+    <div class="input">
+      <label>每月固定支出（CNY）</label>
+      <input id="monthlyExpense" type="number" value="15000" min="0" step="100" />
+    </div>
+    <div class="input">
+      <label>每月计划还债（CNY）</label>
+      <input id="monthlyRepay" type="number" value="10000" min="0" step="100" />
+    </div>
   </div>
 
-  <h2>资产明细</h2>
+  <div class="grid" style="margin-top:14px">
+    <div class="card"><div class="muted">总资产（12个月后）</div><div id="cardAssets" style="font-size:28px">¥272,252.11</div></div>
+    <div class="card"><div class="muted">总负债（12个月后）</div><div id="cardDebt" style="font-size:28px">¥180,000.00</div></div>
+    <div class="card"><div class="muted">净资产（12个月后）</div><div id="cardNet" class="ok" style="font-size:28px">¥92,252.11</div></div>
+    <div class="card"><div class="muted">现金余额（12个月后）</div><div id="cardCash" style="font-size:28px">¥35,000</div></div>
+  </div>
+
+  <h2>资产基线（当前）</h2>
   <table>
     <tr><th>类别</th><th>明细</th><th>金额（原币）</th><th>折算 CNY</th></tr>
     <tr><td>现金</td><td>人民币现金</td><td>35,000 CNY</td><td>35,000.00</td></tr>
@@ -57,9 +72,11 @@
     </tr>
   </table>
 
-  <h2>未来12个月现金流预测（税前模板）</h2>
+  <h2>未来12个月预期收入与资产</h2>
   <table id="cashflowTable">
-    <tr><th>月份</th><th>固定工资</th><th>绩效现金</th><th>全年奖</th><th>月现金合计</th><th>建议还款</th><th>月末债务余额</th></tr>
+    <tr>
+      <th>月份</th><th>月收入</th><th>固定支出</th><th>还债</th><th>月净流入</th><th>月末现金</th><th>月末负债</th><th>月末净资产</th>
+    </tr>
   </table>
 
   <h2>股权归属日历（关键节点）</h2>
@@ -69,12 +86,14 @@
     <tr><td>绩效RSU</td><td>118 股：2026-04-25 归属24股；2026-05-01起每月归属8股；2027-04-01归属6股</td></tr>
   </table>
 
-  <p class="muted" style="margin-top:14px">注：期权空头头寸（NVDA/MSFT）作为风险敞口单列，不计入静态净资产。下一版可接实时行情。</p>
+  <p class="muted" style="margin-top:14px">注：投资资产默认按当前静态口径（不随行情变动），你可以先用这个做现金与负债管理。</p>
 </div>
 
 <script>
   const startDebt = 180000;
-  const monthlyPay = 10000; // 可按你的计划调整
+  const startCash = 35000;
+  const investStatic = 51018.77 + 157433.34 + 28800; // 非现金资产静态值
+
   const months = [
     '2026-03','2026-04','2026-05','2026-06','2026-07','2026-08','2026-09','2026-10','2026-11','2026-12','2027-01','2027-02'
   ];
@@ -85,26 +104,58 @@
     return 4071.13;
   }
   function annualBonus(i){ return i===0 ? 108098.63 : 0; }
+  function monthlyIncome(i){ return 45000 + perfCash(i) + annualBonus(i); }
 
-  let debt = startDebt;
-  const tb = document.getElementById('cashflowTable');
-  months.forEach((m,i)=>{
-    const salary = 45000;
-    const perf = perfCash(i);
-    const bonus = annualBonus(i);
-    const total = salary + perf + bonus;
-    const repay = Math.min(monthlyPay, debt);
-    debt = Math.max(0, debt - repay);
+  const fmt = n => `¥${n.toLocaleString(undefined,{maximumFractionDigits:2})}`;
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${m}</td><td>${salary.toLocaleString()}</td><td>${perf.toLocaleString()}</td><td>${bonus.toLocaleString()}</td><td class="warn">${total.toLocaleString()}</td><td>${repay.toLocaleString()}</td><td>${debt.toLocaleString()}</td>`;
-    tb.appendChild(tr);
-  });
+  function recalc(){
+    const expense = Math.max(0, Number(document.getElementById('monthlyExpense').value || 0));
+    const repayPlan = Math.max(0, Number(document.getElementById('monthlyRepay').value || 0));
 
-  const repaidPct = ((startDebt - debt)/startDebt*100).toFixed(1);
-  document.getElementById('debtProgress').style.width = repaidPct + '%';
-  document.getElementById('debtText').textContent = `已偿还 ${repaidPct}%（按每月还款 ¥${monthlyPay.toLocaleString()} 模板）`;
-  document.getElementById('debtRemain').textContent = `${debt.toLocaleString()} CNY（12个月后）`;
+    let debt = startDebt;
+    let cash = startCash;
+    const tb = document.getElementById('cashflowTable');
+    tb.innerHTML = `<tr><th>月份</th><th>月收入</th><th>固定支出</th><th>还债</th><th>月净流入</th><th>月末现金</th><th>月末负债</th><th>月末净资产</th></tr>`;
+
+    months.forEach((m,i)=>{
+      const income = monthlyIncome(i);
+      const repay = Math.min(repayPlan, debt);
+      const net = income - expense - repay;
+      cash += net;
+      debt -= repay;
+      const netAsset = cash + investStatic - debt;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${m}</td>
+        <td>${income.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td>${expense.toLocaleString()}</td>
+        <td>${repay.toLocaleString()}</td>
+        <td class="warn">${net.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td>${cash.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td>${debt.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td class="ok">${netAsset.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+      `;
+      tb.appendChild(tr);
+    });
+
+    const totalAssets = cash + investStatic;
+    const netAssets = totalAssets - debt;
+
+    document.getElementById('cardAssets').textContent = fmt(totalAssets);
+    document.getElementById('cardDebt').textContent = fmt(debt);
+    document.getElementById('cardNet').textContent = fmt(netAssets);
+    document.getElementById('cardCash').textContent = fmt(cash);
+
+    const repaidPct = ((startDebt - debt)/startDebt*100).toFixed(1);
+    document.getElementById('debtProgress').style.width = repaidPct + '%';
+    document.getElementById('debtText').textContent = `已偿还 ${repaidPct}%（按每月还债 ${fmt(repayPlan)}）`;
+    document.getElementById('debtRemain').textContent = `${debt.toLocaleString(undefined,{maximumFractionDigits:2})} CNY（12个月后）`;
+  }
+
+  document.getElementById('monthlyExpense').addEventListener('input', recalc);
+  document.getElementById('monthlyRepay').addEventListener('input', recalc);
+  recalc();
 </script>
 </body>
 </html>
