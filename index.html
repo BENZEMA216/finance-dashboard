@@ -61,6 +61,13 @@
     <div class="card"><div class="muted">现金余额（12个月后）</div><div id="cardCash" style="font-size:28px">¥35,000</div></div>
   </div>
 
+  <h2>月度收支与可支配比例（子模块）</h2>
+  <table id="disposableTable">
+    <tr>
+      <th>月份</th><th>固定收入（税后）</th><th>固定支出</th><th>余额</th><th>可支配比例</th>
+    </tr>
+  </table>
+
   <h2>资产基线（当前）</h2>
   <table>
     <tr><th>类别</th><th>明细</th><th>金额（原币）</th><th>折算 CNY</th></tr>
@@ -157,6 +164,9 @@
     const firstTb = document.getElementById('firstDayTable');
     firstTb.innerHTML = `<tr><th>日期（每月1号）</th><th>预计现金</th><th>投资资产（静态）</th><th>预计总资产</th><th>预计负债</th><th>预计净资产</th></tr>`;
 
+    const disposableTb = document.getElementById('disposableTable');
+    disposableTb.innerHTML = `<tr><th>月份</th><th>固定收入（税后）</th><th>固定支出</th><th>余额</th><th>可支配比例</th></tr>`;
+
     const tb = document.getElementById('cashflowTable');
     tb.innerHTML = `<tr><th>月份</th><th>税前月收入</th><th>预估个税</th><th>预估税后到手</th><th>固定支出</th><th>车贷</th><th>还债</th><th>月净流入</th><th>月末现金</th><th>月末负债</th><th>月末净资产</th></tr>`;
 
@@ -176,6 +186,26 @@
 
     months.forEach((m,i)=>{
       const income = monthlyIncome(i);
+
+      // 子模块：固定收入/固定支出/余额/可支配比例
+      const fixedGross = 45000;
+      const fixedTaxableMonthly = Math.max(0, fixedGross - 5000 - sihf - specialDeduct);
+      const fixedTax = annualTaxByBracket(fixedTaxableMonthly * 12) / 12;
+      const fixedNetIncome = fixedGross - sihf - fixedTax;
+      const fixedOutflow = expense + carLoan + repayPlan;
+      const fixedBalance = fixedNetIncome - fixedOutflow;
+      const disposableRatio = fixedNetIncome > 0 ? (fixedBalance / fixedNetIncome) * 100 : 0;
+
+      const dtr = document.createElement('tr');
+      dtr.innerHTML = `
+        <td>${m}</td>
+        <td>${fixedNetIncome.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td>${fixedOutflow.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td class="warn">${fixedBalance.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td class="ok">${disposableRatio.toFixed(1)}%</td>
+      `;
+      disposableTb.appendChild(dtr);
+
       cumGross += income;
       const cumTaxable = Math.max(0, cumGross - (5000 + sihf + specialDeduct) * (i + 1));
       const cumTax = annualTaxByBracket(cumTaxable);
