@@ -74,8 +74,8 @@
   <table>
     <tr><th>债务项</th><th>初始金额</th><th>当前余额</th><th>进度</th></tr>
     <tr>
-      <td>对妈妈债务</td>
-      <td>180,000 CNY</td>
+      <td>总负债（妈妈借款+车贷）</td>
+      <td>323,328 CNY</td>
       <td id="debtRemain">180,000 CNY</td>
       <td>
         <div class="bar"><span id="debtProgress" style="width:0%"></span></div>
@@ -109,7 +109,9 @@
 </div>
 
 <script>
-  const startDebt = 180000;
+  const startMomDebt = 180000;
+  const startCarDebt = 5972 * 24;
+  const startDebt = startMomDebt + startCarDebt; // 总负债
   const startCash = 35000;
   const investStatic = 51018.77 + 157433.34 + 28800; // 非现金资产静态值
 
@@ -145,7 +147,9 @@
     const sihf = Math.max(0, Number(document.getElementById('monthlySIHF').value || 0));
     const specialDeduct = Math.max(0, Number(document.getElementById('monthlySpecialDeduction').value || 0));
 
-    let debt = startDebt;
+    let momDebt = startMomDebt;
+    let carDebt = startCarDebt;
+    let debt = momDebt + carDebt;
     let cash = startCash;
     let cumGross = 0;
     let cumTaxPaid = 0;
@@ -179,10 +183,13 @@
       cumTaxPaid = cumTax;
 
       const takeHome = income - sihf - monthTax;
-      const repay = Math.min(repayPlan, debt);
-      const net = takeHome - expense - carLoan - repay;
+      const repay = Math.min(repayPlan, momDebt);
+      const carPay = Math.min(carLoan, carDebt);
+      const net = takeHome - expense - carPay - repay;
       cash += net;
-      debt -= repay;
+      momDebt -= repay;
+      carDebt -= carPay;
+      debt = momDebt + carDebt;
       const netAsset = cash + investStatic - debt;
 
       const tr = document.createElement('tr');
@@ -192,7 +199,7 @@
         <td>${monthTax.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
         <td>${takeHome.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
         <td>${expense.toLocaleString()}</td>
-        <td>${carLoan.toLocaleString()}</td>
+        <td>${carPay.toLocaleString()}</td>
         <td>${repay.toLocaleString()}</td>
         <td class="warn">${net.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
         <td>${cash.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
@@ -230,7 +237,7 @@
 
     const repaidPct = ((startDebt - debt)/startDebt*100).toFixed(1);
     document.getElementById('debtProgress').style.width = repaidPct + '%';
-    document.getElementById('debtText').textContent = `已偿还 ${repaidPct}%（按每月还债 ${fmt(repayPlan)}）`;
+    document.getElementById('debtText').textContent = `已偿还 ${repaidPct}%（妈妈还债 ${fmt(repayPlan)} + 车贷 ${fmt(carLoan)}）`;
     document.getElementById('debtRemain').textContent = `${debt.toLocaleString(undefined,{maximumFractionDigits:2})} CNY（12个月后）`;
   }
 
