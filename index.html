@@ -72,7 +72,14 @@
     </tr>
   </table>
 
-  <h2>未来12个月预期收入与资产</h2>
+  <h2>每个月一号预计总资产（你要的主表）</h2>
+  <table id="firstDayTable">
+    <tr>
+      <th>日期（每月1号）</th><th>预计现金</th><th>投资资产（静态）</th><th>预计总资产</th><th>预计负债</th><th>预计净资产</th>
+    </tr>
+  </table>
+
+  <h2>未来12个月预期收入与资产（过程表）</h2>
   <table id="cashflowTable">
     <tr>
       <th>月份</th><th>月收入</th><th>固定支出</th><th>还债</th><th>月净流入</th><th>月末现金</th><th>月末负债</th><th>月末净资产</th>
@@ -114,8 +121,26 @@
 
     let debt = startDebt;
     let cash = startCash;
+
+    const firstTb = document.getElementById('firstDayTable');
+    firstTb.innerHTML = `<tr><th>日期（每月1号）</th><th>预计现金</th><th>投资资产（静态）</th><th>预计总资产</th><th>预计负债</th><th>预计净资产</th></tr>`;
+
     const tb = document.getElementById('cashflowTable');
     tb.innerHTML = `<tr><th>月份</th><th>月收入</th><th>固定支出</th><th>还债</th><th>月净流入</th><th>月末现金</th><th>月末负债</th><th>月末净资产</th></tr>`;
+
+    // 先放首行：当前起点（2026-03-01）
+    const firstRow0 = document.createElement('tr');
+    const total0 = cash + investStatic;
+    const net0 = total0 - debt;
+    firstRow0.innerHTML = `
+      <td>2026-03-01</td>
+      <td>${cash.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+      <td>${investStatic.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+      <td class="warn">${total0.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+      <td>${debt.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+      <td class="ok">${net0.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+    `;
+    firstTb.appendChild(firstRow0);
 
     months.forEach((m,i)=>{
       const income = monthlyIncome(i);
@@ -137,6 +162,24 @@
         <td class="ok">${netAsset.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
       `;
       tb.appendChild(tr);
+
+      // 每个月结束后，生成下个月1号预计总资产
+      const [y,mo] = m.split('-').map(Number);
+      let ny = y, nm = mo + 1;
+      if (nm === 13) { nm = 1; ny += 1; }
+      const firstDay = `${ny}-${String(nm).padStart(2,'0')}-01`;
+      const totalA = cash + investStatic;
+      const netA = totalA - debt;
+      const fr = document.createElement('tr');
+      fr.innerHTML = `
+        <td>${firstDay}</td>
+        <td>${cash.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td>${investStatic.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td class="warn">${totalA.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td>${debt.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td class="ok">${netA.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+      `;
+      firstTb.appendChild(fr);
     });
 
     const totalAssets = cash + investStatic;
