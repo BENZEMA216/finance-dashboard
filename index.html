@@ -41,6 +41,10 @@
       <input id="monthlyRepay" type="number" value="10000" min="0" step="100" />
     </div>
     <div class="input">
+      <label>每月车贷还款（CNY）</label>
+      <input id="monthlyCarLoan" type="number" value="5972" min="0" step="1" />
+    </div>
+    <div class="input">
       <label>每月五险一金个人缴纳（CNY）</label>
       <input id="monthlySIHF" type="number" value="3500" min="0" step="100" />
     </div>
@@ -90,7 +94,7 @@
   <h2>未来12个月预期收入与资产（过程表）</h2>
   <table id="cashflowTable">
     <tr>
-      <th>月份</th><th>税前月收入</th><th>预估个税</th><th>预估税后到手</th><th>固定支出</th><th>还债</th><th>月净流入</th><th>月末现金</th><th>月末负债</th><th>月末净资产</th>
+      <th>月份</th><th>税前月收入</th><th>预估个税</th><th>预估税后到手</th><th>固定支出</th><th>车贷</th><th>还债</th><th>月净流入</th><th>月末现金</th><th>月末负债</th><th>月末净资产</th>
     </tr>
   </table>
 
@@ -137,6 +141,7 @@
   function recalc(){
     const expense = Math.max(0, Number(document.getElementById('monthlyExpense').value || 0));
     const repayPlan = Math.max(0, Number(document.getElementById('monthlyRepay').value || 0));
+    const carLoan = Math.max(0, Number(document.getElementById('monthlyCarLoan').value || 0));
     const sihf = Math.max(0, Number(document.getElementById('monthlySIHF').value || 0));
     const specialDeduct = Math.max(0, Number(document.getElementById('monthlySpecialDeduction').value || 0));
 
@@ -149,7 +154,7 @@
     firstTb.innerHTML = `<tr><th>日期（每月1号）</th><th>预计现金</th><th>投资资产（静态）</th><th>预计总资产</th><th>预计负债</th><th>预计净资产</th></tr>`;
 
     const tb = document.getElementById('cashflowTable');
-    tb.innerHTML = `<tr><th>月份</th><th>税前月收入</th><th>预估个税</th><th>预估税后到手</th><th>固定支出</th><th>还债</th><th>月净流入</th><th>月末现金</th><th>月末负债</th><th>月末净资产</th></tr>`;
+    tb.innerHTML = `<tr><th>月份</th><th>税前月收入</th><th>预估个税</th><th>预估税后到手</th><th>固定支出</th><th>车贷</th><th>还债</th><th>月净流入</th><th>月末现金</th><th>月末负债</th><th>月末净资产</th></tr>`;
 
     // 先放首行：当前起点（2026-03-01）
     const firstRow0 = document.createElement('tr');
@@ -175,7 +180,7 @@
 
       const takeHome = income - sihf - monthTax;
       const repay = Math.min(repayPlan, debt);
-      const net = takeHome - expense - repay;
+      const net = takeHome - expense - carLoan - repay;
       cash += net;
       debt -= repay;
       const netAsset = cash + investStatic - debt;
@@ -187,6 +192,7 @@
         <td>${monthTax.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
         <td>${takeHome.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
         <td>${expense.toLocaleString()}</td>
+        <td>${carLoan.toLocaleString()}</td>
         <td>${repay.toLocaleString()}</td>
         <td class="warn">${net.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
         <td>${cash.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
@@ -230,6 +236,7 @@
 
   document.getElementById('monthlyExpense').addEventListener('input', recalc);
   document.getElementById('monthlyRepay').addEventListener('input', recalc);
+  document.getElementById('monthlyCarLoan').addEventListener('input', recalc);
   document.getElementById('monthlySIHF').addEventListener('input', recalc);
   document.getElementById('monthlySpecialDeduction').addEventListener('input', recalc);
   recalc();
