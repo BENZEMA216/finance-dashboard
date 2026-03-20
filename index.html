@@ -27,17 +27,6 @@
   </style>
 </head>
 <body>
-<div id="gate" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;">
-  <div style="width:100%;max-width:420px;background:#131a33;border:1px solid #283153;border-radius:12px;padding:18px;">
-    <h2 style="margin:0 0 10px;">🔒 页面访问验证</h2>
-    <div class="muted" style="margin-bottom:10px;">请输入访问密码</div>
-    <input id="pwdInput" type="password" placeholder="Password" style="width:100%;background:#0f1530;border:1px solid #334171;color:#e8ecff;border-radius:8px;padding:10px;font-size:14px" />
-    <button id="unlockBtn" style="margin-top:10px;width:100%;background:#22c55e;color:#0b1020;border:none;border-radius:8px;padding:10px;font-weight:600;cursor:pointer;">进入页面</button>
-    <div id="gateMsg" class="muted" style="margin-top:8px;color:#fca5a5;display:none;">密码错误</div>
-  </div>
-</div>
-
-<div id="app" style="display:none;">
 <div class="wrap">
   <h1>资产看板（弦维护）</h1>
   <div class="muted">更新时间：2026-03-21 · 汇率假设 USD/CNY=7.20, HKD/CNY=0.92</div>
@@ -50,6 +39,14 @@
     <div class="input">
       <label>每月计划还债（CNY）</label>
       <input id="monthlyRepay" type="number" value="10000" min="0" step="100" />
+    </div>
+    <div class="input">
+      <label>每月五险一金个人缴纳（CNY）</label>
+      <input id="monthlySIHF" type="number" value="3500" min="0" step="100" />
+    </div>
+    <div class="input">
+      <label>每月专项附加扣除（CNY）</label>
+      <input id="monthlySpecialDeduction" type="number" value="2000" min="0" step="100" />
     </div>
   </div>
 
@@ -93,7 +90,7 @@
   <h2>未来12个月预期收入与资产（过程表）</h2>
   <table id="cashflowTable">
     <tr>
-      <th>月份</th><th>月收入</th><th>固定支出</th><th>还债</th><th>月净流入</th><th>月末现金</th><th>月末负债</th><th>月末净资产</th>
+      <th>月份</th><th>税前月收入</th><th>预估个税</th><th>预估税后到手</th><th>固定支出</th><th>还债</th><th>月净流入</th><th>月末现金</th><th>月末负债</th><th>月末净资产</th>
     </tr>
   </table>
 
@@ -104,34 +101,10 @@
     <tr><td>绩效RSU</td><td>118 股：2026-04-25 归属24股；2026-05-01起每月归属8股；2027-04-01归属6股</td></tr>
   </table>
 
-  <p class="muted" style="margin-top:14px">注：投资资产默认按当前静态口径（不随行情变动），你可以先用这个做现金与负债管理。</p>
-</div>
+  <p class="muted" style="margin-top:14px">注：个税采用中国居民综合所得累计预扣法估算；用于规划，不替代薪资系统实发。</p>
 </div>
 
 <script>
-  // 简单静态密码门（前端方案，仅防随手访问，不是高强度安全）
-  const PASSWORD = '0309';
-  function unlock(){
-    const v = (document.getElementById('pwdInput').value || '').trim();
-    if(v === PASSWORD){
-      document.getElementById('gate').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      sessionStorage.setItem('finance_unlocked','1');
-      recalc();
-    }else{
-      const msg = document.getElementById('gateMsg');
-      msg.style.display = 'block';
-    }
-  }
-  document.getElementById('unlockBtn').addEventListener('click', unlock);
-  document.getElementById('pwdInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') unlock(); });
-
-  if(sessionStorage.getItem('finance_unlocked') === '1'){
-    document.getElementById('gate').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-  }
-
-
   const startDebt = 180000;
   const startCash = 35000;
   const investStatic = 51018.77 + 157433.34 + 28800; // 非现金资产静态值
@@ -148,20 +121,35 @@
   function annualBonus(i){ return i===0 ? 108098.63 : 0; }
   function monthlyIncome(i){ return 45000 + perfCash(i) + annualBonus(i); }
 
+  function annualTaxByBracket(taxable){
+    if(taxable <= 0) return 0;
+    if(taxable <= 36000) return taxable * 0.03;
+    if(taxable <= 144000) return taxable * 0.10 - 2520;
+    if(taxable <= 300000) return taxable * 0.20 - 16920;
+    if(taxable <= 420000) return taxable * 0.25 - 31920;
+    if(taxable <= 660000) return taxable * 0.30 - 52920;
+    if(taxable <= 960000) return taxable * 0.35 - 85920;
+    return taxable * 0.45 - 181920;
+  }
+
   const fmt = n => `¥${n.toLocaleString(undefined,{maximumFractionDigits:2})}`;
 
   function recalc(){
     const expense = Math.max(0, Number(document.getElementById('monthlyExpense').value || 0));
     const repayPlan = Math.max(0, Number(document.getElementById('monthlyRepay').value || 0));
+    const sihf = Math.max(0, Number(document.getElementById('monthlySIHF').value || 0));
+    const specialDeduct = Math.max(0, Number(document.getElementById('monthlySpecialDeduction').value || 0));
 
     let debt = startDebt;
     let cash = startCash;
+    let cumGross = 0;
+    let cumTaxPaid = 0;
 
     const firstTb = document.getElementById('firstDayTable');
     firstTb.innerHTML = `<tr><th>日期（每月1号）</th><th>预计现金</th><th>投资资产（静态）</th><th>预计总资产</th><th>预计负债</th><th>预计净资产</th></tr>`;
 
     const tb = document.getElementById('cashflowTable');
-    tb.innerHTML = `<tr><th>月份</th><th>月收入</th><th>固定支出</th><th>还债</th><th>月净流入</th><th>月末现金</th><th>月末负债</th><th>月末净资产</th></tr>`;
+    tb.innerHTML = `<tr><th>月份</th><th>税前月收入</th><th>预估个税</th><th>预估税后到手</th><th>固定支出</th><th>还债</th><th>月净流入</th><th>月末现金</th><th>月末负债</th><th>月末净资产</th></tr>`;
 
     // 先放首行：当前起点（2026-03-01）
     const firstRow0 = document.createElement('tr');
@@ -179,8 +167,15 @@
 
     months.forEach((m,i)=>{
       const income = monthlyIncome(i);
+      cumGross += income;
+      const cumTaxable = Math.max(0, cumGross - (5000 + sihf + specialDeduct) * (i + 1));
+      const cumTax = annualTaxByBracket(cumTaxable);
+      const monthTax = Math.max(0, cumTax - cumTaxPaid);
+      cumTaxPaid = cumTax;
+
+      const takeHome = income - sihf - monthTax;
       const repay = Math.min(repayPlan, debt);
-      const net = income - expense - repay;
+      const net = takeHome - expense - repay;
       cash += net;
       debt -= repay;
       const netAsset = cash + investStatic - debt;
@@ -189,6 +184,8 @@
       tr.innerHTML = `
         <td>${m}</td>
         <td>${income.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td>${monthTax.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+        <td>${takeHome.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
         <td>${expense.toLocaleString()}</td>
         <td>${repay.toLocaleString()}</td>
         <td class="warn">${net.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
@@ -233,7 +230,9 @@
 
   document.getElementById('monthlyExpense').addEventListener('input', recalc);
   document.getElementById('monthlyRepay').addEventListener('input', recalc);
-  if(sessionStorage.getItem('finance_unlocked') === '1') recalc();
+  document.getElementById('monthlySIHF').addEventListener('input', recalc);
+  document.getElementById('monthlySpecialDeduction').addEventListener('input', recalc);
+  recalc();
 </script>
 </body>
 </html>
