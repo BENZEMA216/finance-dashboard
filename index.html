@@ -64,7 +64,7 @@
   <h2>现金流表（单独）</h2>
   <table id="cashflowOnlyTable">
     <tr>
-      <th>月份</th><th>现金流入（税后）</th><th>现金流出（生活+车贷+还债）</th><th>净现金流</th><th>期末现金余额</th><th>当月剩余总现金数</th>
+      <th>月份</th><th>期初现金</th><th>现金流入（税后）</th><th>现金流出（生活+车贷+还债）</th><th>净现金流</th><th>期末现金余额</th>
     </tr>
   </table>
   <div class="muted">口径说明：这张表只看现金流，不看账面资产涨跌。</div>
@@ -166,7 +166,7 @@
     firstTb.innerHTML = `<tr><th>日期（每月1号）</th><th>预计现金</th><th>投资资产（静态）</th><th>预计总资产</th><th>预计负债</th><th>预计净资产</th></tr>`;
 
     const disposableTb = document.getElementById('cashflowOnlyTable');
-    disposableTb.innerHTML = `<tr><th>月份</th><th>现金流入（税后）</th><th>现金流出（生活+车贷+还债）</th><th>净现金流</th><th>期末现金余额</th><th>当月剩余总现金数</th></tr>`;
+    disposableTb.innerHTML = `<tr><th>月份</th><th>期初现金</th><th>现金流入（税后）</th><th>现金流出（生活+车贷+还债）</th><th>净现金流</th><th>期末现金余额</th></tr>`;
 
     const tb = document.getElementById('cashflowTable');
     tb.innerHTML = `<tr><th>月份</th><th>税前月收入</th><th>预估个税</th><th>预估税后到手</th><th>固定支出</th><th>车贷</th><th>还债</th><th>月净流入</th><th>月末现金</th><th>月末负债</th><th>月末净资产</th></tr>`;
@@ -208,13 +208,14 @@
       const cashIn = takeHome;
       const cashOut = expense + carPay + repay;
       const netCashflow = net;
+      const beginCash = cash - netCashflow;
       const dtr = document.createElement('tr');
       dtr.innerHTML = `
         <td>${m}</td>
+        <td>${beginCash.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
         <td>${cashIn.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
         <td>${cashOut.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
         <td class="warn">${netCashflow.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
-        <td>${cash.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
         <td class="ok">${cash.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
       `;
       disposableTb.appendChild(dtr);
